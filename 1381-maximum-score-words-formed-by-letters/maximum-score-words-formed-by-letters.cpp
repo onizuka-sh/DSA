@@ -1,37 +1,65 @@
 class Solution {
 public:
-     int actualCounts[26],countsTillNow[26],ans = 0;
-     void solve(int ind,vector<string> &words,vector<int> &score){
-        //base case
-        if(ind==words.size()){
-            int currScore = 0;
-            //calculating the score of letters included in our current solution if they are less than the total count given to us originally
+    map<char, int> mp;
+    vector<map<char, int>> vmp;
+    
+    int scores(string word, vector<int>& score) {
+        int wordScore = 0;
+        for (char ch : word) {
+            wordScore += score[ch - 'a'];
+        }
+        return wordScore;
+    }
 
-            //if any of the letter will exceed it we will simply return our function from there
-            for(int i=0 ; i<26;i++){
-                if(countsTillNow[i]>actualCounts[i]) return;
-                currScore += score[i]*countsTillNow[i];
+    bool check(int idx) {
+        for (auto& ch : vmp[idx]) {
+            if (ch.second > mp[ch.first]) {
+                return false;
             }
-
-            //updating the answer
-            ans = max(ans,currScore);
+        }
+        return true;
+    }
+    
+    void sol(int idx, vector<string>& words, vector<char>& letters, vector<int>& score, int& mx, int& curr) {
+        if (idx >= words.size()) {
+            mx = max(mx, curr);
             return;
         }
-        //moving forward without considering the word as part of our solution
-        solve(ind+1,words,score);
-
-        //taking the word as part of our solution, hence adding the counts of letters of the words
-        for(auto letter : words[ind]) countsTillNow[letter-'a']++;
-        solve(ind + 1, words, score);
-
-        //backtracking by removing the counts of letters of word
-        for (auto letter : words[ind]) countsTillNow[letter - 'a']--;
-     }
+        //skip the current word
+        sol(idx + 1, words, letters, score, mx, curr);
+        
+        //check if word can be added
+        if (check(idx)) {
+            for (auto& i : vmp[idx]) {
+                mp[i.first] -= i.second;
+            }
+            int sc = scores(words[idx], score);
+            curr += sc;
+            sol(idx + 1, words, letters, score, mx, curr);
+            curr -= sc;
+            for (auto& i : vmp[idx]) {
+                mp[i.first] += i.second;
+            }
+        }
+    }
+    
     int maxScoreWords(vector<string>& words, vector<char>& letters, vector<int>& score) {
-        //storing the counts of letters
-        for(auto letter : letters) actualCounts[letter-'a']++;
-        //recursive calling 
-        solve(0,words,score);
-        return ans;
+        int n = letters.size();
+        for (int i = 0; i < n; i++) {
+            mp[letters[i]]++;
+        }
+
+        vmp.resize(words.size()); 
+        
+        for (int i = 0; i < words.size(); i++) {
+            for (int j = 0; j < words[i].length(); j++) {
+                vmp[i][words[i][j]]++;
+            }
+        }
+        
+        int mx = 0;
+        int curr = 0;
+        sol(0, words, letters, score, mx, curr);
+        return mx;
     }
 };
